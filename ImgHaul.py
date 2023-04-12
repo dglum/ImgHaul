@@ -55,7 +55,7 @@ def success():
     label.pack(side=LEFT)
     close.pack(side=RIGHT) 
 
-
+# Check if file with name already exists and throw error to chose another name
 def move():
     #if folderVal == 0:
     if renameVal.get() == 0:
@@ -157,10 +157,6 @@ folderE = Entry(NewFolder, textvariable=folderName)
 folderE.pack(side=BOTTOM)
 folderCB.pack(side=LEFT)
 NewFolder.grid(row=2, column=1, sticky=W)
-
-
-
-
 
 ### Rename Settings ###
 renameFrame = LabelFrame(win, text="Rename", bg="black")
