@@ -3,7 +3,7 @@ from tkinter import filedialog
 from PIL import ImageTk
 import shutil
 import matplotlib.pyplot as plt
-from matplotlib.ticker import MaxNLocator
+from matplotlib.ticker import MaxNLocator, ScalarFormatter
 import exifread
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
@@ -15,9 +15,11 @@ paths = []
 def get_files():
     inp = filedialog.askopenfilenames()
     for item in inp:
-        paths.append(item)
-        toDisplay = item[item.rfind("/")+1:]
-        filesLb.insert(END, toDisplay)
+        if item not in paths:
+            paths.append(item)
+            toDisplay = item[item.rfind("/")+1:]
+            filesLb.insert(END, toDisplay)
+    genPyplot()
 
 
 def remove_files():
@@ -62,6 +64,47 @@ def success():
     close = Button(suc, bg="gray",  text="Ok", command=closeWin)
     label.pack(side=LEFT)
     close.pack(side=RIGHT) 
+
+
+from matplotlib.ticker import MaxNLocator
+
+def genPyplot():
+    fig = Figure(figsize = (6,4))
+    mm = {}
+
+    for file in paths:
+        f = open(file, 'rb')
+        tags = exifread.process_file(f)
+        if len(tags) == 0:
+            break
+        elif int(str(tags["EXIF FocalLength"])) not in mm.keys():
+            mm[int(str(tags["EXIF FocalLength"]))] = 1
+        else:
+            mm[int(str(tags["EXIF FocalLength"]))] += 1
+
+    plot = fig.add_subplot(111)
+
+    xticks = list(sorted(mm.keys()))  # Get all unique focal lengths
+    plot.bar(mm.keys(), mm.values(), width=0.5)  # Set bar width to 0.5 for example
+    plot.set_xticks(xticks)  # Set tick locations to all unique focal lengths
+    plot.set_xticklabels(xticks)  # Set tick labels to the focal length values
+
+    plot.set_xlabel("Focal Length in mm", fontsize=12)
+    plot.set_ylabel("Occurrences", fontsize=12)
+    plot.set_title("Focal Length Distribution", fontsize=16)
+
+    if not mm:
+        plot.set_yticks([1])
+    else:
+        plot.yaxis.set_major_locator(MaxNLocator(integer=True))
+
+    frame = Frame(win)
+    canvas = FigureCanvasTkAgg(fig,master=frame)
+    canvas.draw()
+    canvas.get_tk_widget().pack()
+    frame.grid(row=0, column=1, pady=10, sticky=W)
+
+
 
 # Check if file with name already exists and throw error to chose another name
 def move(win):
@@ -132,13 +175,12 @@ win.resizable(False, False)
 
 ### Camera Image ###
 #cam = Image.open("d500.gif").resize((300,225), Image.Resampling.LANCZOS)
-camera = ImageTk.PhotoImage(file="H:\Dev\ImgHaul\d500.png")
-Label(win, image=camera, bg="gray").grid(row=0, column=2, sticky=W)
+# camera = ImageTk.PhotoImage(file="H:\Dev\ImgHaul\d500.png")
+# Label(win, image=camera, bg="gray").grid(row=0, column=2, sticky=W)
 
 ### Quit Button ###
 quitButton = Button(win, text="Quit", command=win.quit)
 quitButton.grid(row=3, column=3,sticky=E)
-
 
 
 ### Go Button ###
@@ -156,8 +198,7 @@ dirButton.pack(side=LEFT)
 ### Remove Button ###
 removeButton = Button(filesFrame, text="Remove Files", command=remove_files)
 removeButton.pack(side=RIGHT)
-filesFrame.grid(row=0, column=0, padx=10, pady=10)
-
+filesFrame.grid(row=0, column=0, padx=10)
 
 
 ### Destination Settings ###
@@ -168,7 +209,7 @@ destInp = Label(Destination, textvariable=dest_path, relief=RAISED, bg="gray", w
 destBrowse = Button(Destination, text="Browse", command=get_destination)
 destInp.pack(side=LEFT)
 destBrowse.pack(side=RIGHT)
-Destination.grid(row=2, column=0, sticky=W)
+Destination.grid(row=2, column=0, padx=10, sticky=W)
 
 ### New Folder Settings ###
 NewFolder = LabelFrame(win, width=40, text="New Folder", bg="gray")
@@ -190,7 +231,8 @@ prefixLabel = Label(renameFrame, bg="gray", text="Select a prefix")
 renameCB.pack(side=TOP)
 prefix.pack(side=LEFT)
 prefixLabel.pack(side=RIGHT)
-renameFrame.grid(row=2, column=2, padx=20, sticky=W)
+renameFrame.grid(row=2, column=1, padx=(140,0), sticky=W)
 
+genPyplot()
 
 win.mainloop()
