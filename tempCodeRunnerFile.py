@@ -1,0 +1,2 @@
+print(focals)
+# print(occurrences)  
