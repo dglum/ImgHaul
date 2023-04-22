@@ -1,9 +1,15 @@
+#TODO: What's going on with New Folder
+#TODO: Move New Folder into Destination frame
+#TODO: Add copy as lightweight JPEG frame
+#TODO: Input validation maybe?
+
+
 from tkinter import *
 from tkinter import filedialog
 from PIL import ImageTk
 import shutil
 import matplotlib.pyplot as plt
-from matplotlib.ticker import MaxNLocator, ScalarFormatter
+from matplotlib.ticker import MaxNLocator
 import exifread
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
@@ -11,13 +17,13 @@ from matplotlib.figure import Figure
 destIsSet = False
 paths = []
 
-# dont take dupes
+
 def get_files():
     inp = filedialog.askopenfilenames()
     for item in inp:
         if item not in paths:
             paths.append(item)
-            toDisplay = item[item.rfind("/")+1:]
+            toDisplay = item#[item.rfind("/")+1:]
             filesLb.insert(END, toDisplay)
     genPyplot()
 
@@ -28,6 +34,9 @@ def remove_files():
         path_list.insert(0, item)
     for item in path_list:
         filesLb.delete(item)
+        paths.pop(item)
+    genPyplot()
+
 
 
 def get_destination():
@@ -36,13 +45,10 @@ def get_destination():
 
 def Error(msg:str, win:Tk):
     err = Toplevel()
-
     def closeWin():
         err.destroy()
         win.quit()
         return
-    
-
     err.grab_set()
     err.title("Error")
     label = Label(err, bg="gray", text=msg, padx=10, pady=10)
@@ -54,10 +60,8 @@ def Error(msg:str, win:Tk):
 
 def success():
     suc = Toplevel()
-
     def closeWin():
         win.quit()
-
     suc.grab_set()
     suc.title("Success")
     label = Label(suc, bg="gray", text="Transfer successful", padx=10, pady=10)
@@ -65,8 +69,6 @@ def success():
     label.pack(side=LEFT)
     close.pack(side=RIGHT) 
 
-
-from matplotlib.ticker import MaxNLocator
 
 def genPyplot():
     fig = Figure(figsize = (6,4))
@@ -84,10 +86,10 @@ def genPyplot():
 
     plot = fig.add_subplot(111)
 
-    xticks = list(sorted(mm.keys()))  # Get all unique focal lengths
-    plot.bar(mm.keys(), mm.values(), width=0.5)  # Set bar width to 0.5 for example
-    plot.set_xticks(xticks)  # Set tick locations to all unique focal lengths
-    plot.set_xticklabels(xticks)  # Set tick labels to the focal length values
+    xticks = list(sorted(mm.keys()))
+    plot.bar(mm.keys(), mm.values())
+    plot.set_xticks(xticks)
+    plot.set_xticklabels(xticks)
 
     plot.set_xlabel("Focal Length in mm", fontsize=12)
     plot.set_ylabel("Occurrences", fontsize=12)
@@ -103,8 +105,6 @@ def genPyplot():
     canvas.draw()
     canvas.get_tk_widget().pack()
     frame.grid(row=0, column=1, pady=10, sticky=W)
-
-
 
 # Check if file with name already exists and throw error to chose another name
 def move(win):
@@ -125,10 +125,7 @@ def move(win):
                 if prefixVar.get().find(ch) != -1:
                     Error("Illegal character " + ch + " in prefix", win)
                     return
-            if prefixVar.get()[-1].isnumeric():
-                name = prefixVar.get() + "_" + str(counter) + file[file.rfind("."):]
-            else:
-                name = prefixVar.get() + str(counter) + file[file.rfind("."):]
+            name = prefixVar.get() + "_" + str(counter) + file[file.rfind("."):]
             shutil.move(file, dest_path.get() + "/" + name)
             counter += 1
     success()
@@ -165,24 +162,14 @@ def go(win):
 
 
 
-
 win = Tk()
 win.title("ImgHaul")
 win.configure(background="gray")
 win.resizable(False, False)
 
-#win.iconbitmap("d500.gif")
-
-### Camera Image ###
-#cam = Image.open("d500.gif").resize((300,225), Image.Resampling.LANCZOS)
-# camera = ImageTk.PhotoImage(file="H:\Dev\ImgHaul\d500.png")
-# Label(win, image=camera, bg="gray").grid(row=0, column=2, sticky=W)
-
 ### Quit Button ###
 quitButton = Button(win, text="Quit", command=win.quit)
 quitButton.grid(row=3, column=3,sticky=E)
-
-
 ### Go Button ###
 goButton = Button(win, text="Go", command=lambda: go(win))
 goButton.grid(row=3,column=2,sticky=E)
@@ -195,7 +182,7 @@ filesLb.pack(side=TOP)
 # Directory Button #
 dirButton = Button(filesFrame, text="Browse", command=get_files)
 dirButton.pack(side=LEFT)
-### Remove Button ###
+# Remove Button #
 removeButton = Button(filesFrame, text="Remove Files", command=remove_files)
 removeButton.pack(side=RIGHT)
 filesFrame.grid(row=0, column=0, padx=10)
@@ -203,7 +190,6 @@ filesFrame.grid(row=0, column=0, padx=10)
 
 ### Destination Settings ###
 Destination = LabelFrame(win, width=40, text="Destination", bg="gray")
-
 dest_path = StringVar(Destination, value="")
 destInp = Label(Destination, textvariable=dest_path, relief=RAISED, bg="gray", width=20)
 destBrowse = Button(Destination, text="Browse", command=get_destination)
