@@ -1,13 +1,11 @@
-#TODO: What's going on with New Folder
-#TODO: Move New Folder into Destination frame
 #TODO: Add copy as lightweight JPEG frame
-#TODO: Input validation maybe?
+#TODO: Check input validation
 
 
 from tkinter import *
 from tkinter import filedialog
 from PIL import ImageTk
-import shutil
+import shutil, os
 import matplotlib.pyplot as plt
 from matplotlib.ticker import MaxNLocator
 import exifread
@@ -108,7 +106,6 @@ def genPyplot():
 
 # Check if file with name already exists and throw error to chose another name
 def move(win):
-    #if folderVal == 0:
     if renameVal.get() == 0:
         for file in paths:
             name = file[file.rfind("/"):]
@@ -129,20 +126,6 @@ def move(win):
             shutil.move(file, dest_path.get() + "/" + name)
             counter += 1
     success()
-    # else:
-    #     if renameVal.get() == 0:
-    #         for file in paths:
-    #             name = file[file.rfind("/"):]
-    #             shutil.move(file, dest_path.get() + name)
-    #     else:
-    #         if prefixVar.get() == "":
-    #             Error("No prefix provided")
-    #         counter = 0
-    #         for file in paths:
-    #             name = prefixVar.get() + str(counter)
-    #             shutil.move(file, dest_path.get() + "/" + name)
-    #             counter += 1
-    #     success()
 
 
 def go(win):
@@ -153,11 +136,21 @@ def go(win):
         Error("No destination set", win)
         win.destroy()
     else:
-        # if folderVal == 1:
-        #     print(dest_path.get() + "/" + folderName.get())
-        # else:
-        #     print(dest_path.get())
-        # #os.mkdir(dest_path)
+        if folderVal.get() == 1:
+            illegalCh = ["#", "%", "&", "{", "}", "/", "<", ">", ".", "\\", "[", "]", ":", ";", "|", ","]
+            dir = folderName.get()
+            for ch in illegalCh:
+                if folderName.get().find(ch) != -1:
+                    Error("Illegal character " + ch + " in folder name", win)
+                    return
+            parentDir = dest_path.get()
+            path = os.path.join(parentDir, dir)
+            if (os.path.exists(path)):
+                Error("Path already exists", win)
+                return
+            os.mkdir(path)
+            dest_path.set(path)
+        #print(dest_path.get())
         move(win)
 
 
@@ -193,19 +186,16 @@ Destination = LabelFrame(win, width=40, text="Destination", bg="gray")
 dest_path = StringVar(Destination, value="")
 destInp = Label(Destination, textvariable=dest_path, relief=RAISED, bg="gray", width=20)
 destBrowse = Button(Destination, text="Browse", command=get_destination)
+# New Folder Settings #
+folderVal = IntVar()
+folderCB = Checkbutton(Destination, variable=folderVal, text="Make New Folder", bg="gray")
+folderName = StringVar(Destination, value="New Folder")
+folderE = Entry(Destination, textvariable=folderName)
+folderE.pack(side=BOTTOM)
+folderCB.pack(side=BOTTOM)
 destInp.pack(side=LEFT)
 destBrowse.pack(side=RIGHT)
 Destination.grid(row=2, column=0, padx=10, sticky=W)
-
-### New Folder Settings ###
-NewFolder = LabelFrame(win, width=40, text="New Folder", bg="gray")
-folderVal = IntVar()
-folderCB = Checkbutton(NewFolder, variable=folderVal, text="Make New Folder", bg="gray")
-folderName = StringVar(NewFolder, value="New Folder")
-folderE = Entry(NewFolder, textvariable=folderName)
-folderE.pack(side=BOTTOM)
-folderCB.pack(side=LEFT)
-NewFolder.grid(row=2, column=1, sticky=W)
 
 ### Rename Settings ###
 renameFrame = LabelFrame(win, text="Rename", bg="gray")
