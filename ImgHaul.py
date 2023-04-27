@@ -4,11 +4,10 @@
 
 from tkinter import *
 from tkinter import filedialog
-from PIL import ImageTk
-import shutil, os
+from PIL import Image
+import shutil, os, exifread, time
 import matplotlib.pyplot as plt
 from matplotlib.ticker import MaxNLocator
-import exifread
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
 
@@ -21,7 +20,7 @@ def get_files():
     for item in inp:
         if item not in paths:
             paths.append(item)
-            toDisplay = item#[item.rfind("/")+1:]
+            toDisplay = item
             filesLb.insert(END, toDisplay)
     genPyplot()
 
@@ -106,26 +105,63 @@ def genPyplot():
 
 # Check if file with name already exists and throw error to chose another name
 def move(win):
-    if renameVal.get() == 0:
-        for file in paths:
-            name = file[file.rfind("/"):]
-            shutil.move(file, dest_path.get() + name)
+    if jpegVal.get() == 0:
+        # If not renaming 
+        if renameVal.get() == 0:
+            # Get filename from each path, move it to destination path
+            for file in paths:
+                name = file[file.rfind("/"):]
+                shutil.move(file, dest_path.get() + name)
+        # If renaming
+        else:
+            # Check for empty prefix
+            if prefixVar.get() == "":
+                Error("No prefix provided", win)
+                win.destroy()
+            counter = 0
+            # Check for illegal characters, then move
+            for file in paths:
+                illegalCh = ["#", "%", "&", "{", "}", "/", "<", ">", ".", "\\", "[", "]", ":", ";", "|", ","]
+                for ch in illegalCh:
+                    if prefixVar.get().find(ch) != -1:
+                        Error("Illegal character " + ch + " in prefix", win)
+                        return
+                name = prefixVar.get() + "_" + str(counter) + file[file.rfind("."):]
+                shutil.move(file, dest_path.get() + "/" + name)
+                counter += 1
+        success()
     else:
-        if prefixVar.get() == "":
-            Error("No prefix provided", win)
-            win.destroy()
-            #sys.exit()
-        counter = 0
-        for file in paths:
-            illegalCh = ["#", "%", "&", "{", "}", "/", "<", ">", ".", "\\", "[", "]", ":", ";", "|", ","]
-            for ch in illegalCh:
-                if prefixVar.get().find(ch) != -1:
-                    Error("Illegal character " + ch + " in prefix", win)
-                    return
-            name = prefixVar.get() + "_" + str(counter) + file[file.rfind("."):]
-            shutil.move(file, dest_path.get() + "/" + name)
-            counter += 1
-    success()
+        # If not renaming
+        if renameVal.get() == 0:
+            for file in paths:
+                newPath = dest_path.get() + "/" + file[file.rfind("/"):]
+                newPath = newPath[:newPath.rfind(".")] + ".jpg"
+                img = Image.open(file)
+                if img.mode == "RGBA":
+                    img = img.convert("RGB")
+                img.save(newPath, format="JPEG", quality=quality.get(), subsampling=0)
+        # If renaming
+        else:
+            if prefixVar.get() == "":
+                Error("No prefix provided", win)
+                win.destroy()
+            counter = 0
+            # Check for illegal characters, then move
+            for file in paths:
+                illegalCh = ["#", "%", "&", "{", "}", "/", "<", ">", ".", "\\", "[", "]", ":", ";", "|", ","]
+                for ch in illegalCh:
+                    if prefixVar.get().find(ch) != -1:
+                        Error("Illegal character " + ch + " in prefix", win)
+                        return
+                newPath = dest_path.get() + "/" + prefixVar.get() + "_" + str(counter) + file[file.rfind("."):]
+                newPath = newPath[:newPath.rfind(".")] + ".jpg"
+                img = Image.open(file)
+                if img.mode == "RGBA":
+                    img = img.convert("RGB")
+                img.save(newPath, format="JPEG", quality=quality.get(), subsampling=0)
+                counter += 1
+        success()
+
 
 
 def go(win):
@@ -150,7 +186,6 @@ def go(win):
                 return
             os.mkdir(path)
             dest_path.set(path)
-        #print(dest_path.get())
         move(win)
 
 
@@ -208,6 +243,18 @@ renameCB.pack(side=TOP)
 prefix.pack(side=LEFT)
 prefixLabel.pack(side=RIGHT)
 renameFrame.grid(row=2, column=1, padx=(140,0), sticky=W)
+
+### Copy as JPEG ###
+jpegFrame = LabelFrame(win, text="Copy as JPEG", bg="gray")
+quality = IntVar()
+jpegVal = IntVar()
+asJpeg = Checkbutton(jpegFrame, bg="gray", text="Copy files as JPEGs", variable=jpegVal)
+qualLabel = Label(jpegFrame, bg="gray", text="Quality")
+qualSlider = Scale(jpegFrame, bg="gray", orient= HORIZONTAL, variable=quality, from_=1,to=100)
+asJpeg.pack(side=TOP)
+qualLabel.pack(side=BOTTOM)
+qualSlider.pack(side=BOTTOM)
+jpegFrame.grid(row=2, column=2)
 
 genPyplot()
 
