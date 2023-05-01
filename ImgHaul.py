@@ -1,10 +1,8 @@
-#TODO: optimize exif so it's not slow
-
-
 from tkinter import *
 from tkinter import filedialog
-from PIL import Image
+from PIL import Image, UnidentifiedImageError
 import shutil, os, exifread
+import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.ticker import MaxNLocator
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
@@ -93,27 +91,24 @@ def genPyplot():
     mm = {}
 
     for file in paths:
-        f = open(file, 'rb')
-        tags = exifread.process_file(f, stop_tag='EXIF FocalLength')
-        # if len(tags) == 0:
-        #     break
-        # elif int(str(tags["EXIF FocalLength"])) not in mm.keys():
-        #     mm[int(str(tags["EXIF FocalLength"]))] = 1
-        # else:
-        #     mm[int(str(tags["EXIF FocalLength"]))] += 1
-        focalLength = tags.get("EXIF FocalLength")
-        focalLength = str(focalLength)
-        if focalLength != None:
-            if "/" in focalLength:
-                num, denom = str(focalLength).split("/")
-                focalLength = float(num) / float(denom)
-            if focalLength not in mm.keys():
-                mm[focalLength] = 1
-            else:
-                mm[focalLength] += 1
+        with open(file, 'rb') as f:
+            tags = exifread.process_file(f, stop_tag='EXIF FocalLength', details=False)
+            focalLength = tags.get("EXIF FocalLength")
+            focalLength = str(focalLength)
+            if focalLength != None and focalLength != "None":
+                if "/" in focalLength:
+                    focalLength = int(focalLength[:focalLength.find("/")]) // 2
+                focalLength = int(focalLength)
+                if focalLength not in mm.keys():
+                    
+                    mm[focalLength] = 1
+                else:
+                    mm[focalLength] += 1
+        
+    # for key in mm.keys():
+    #     print("Key: ", key, " Type: ", type(key))   
 
     plot = fig.add_subplot(111)
-    print(type(list(mm.keys())[0]))
     
     xticks = list(sorted(mm.keys()))
     plot.bar(mm.keys(), mm.values(), color="white")
@@ -140,6 +135,7 @@ def genPyplot():
 
 # Check if file with name already exists and throw error to chose another name
 def move(win):
+    # If NOT copying as jpeg
     if jpegVal.get() == 0:
         # If not renaming 
         if renameVal.get() == 0:
@@ -165,16 +161,22 @@ def move(win):
                 shutil.move(file, dest_path.get() + "/" + name)
                 counter += 1
         success()
+    # If copying as jpeg
     else:
         # If not renaming
         if renameVal.get() == 0:
             for file in paths:
                 newPath = dest_path.get() + "/" + file[file.rfind("/"):]
-                newPath = newPath[:newPath.rfind(".")] + ".jpg"
-                img = Image.open(file)
-                if img.mode == "RGBA":
-                    img = img.convert("RGB")
-                img.save(newPath, format="JPEG", quality=quality.get(), subsampling=0)
+                print("New Path: ", newPath) 
+                # If file is supported
+                try:
+                    img = Image.open(file)
+                    newPath = newPath[:newPath.rfind(".")] + ".jpg"
+                    if img.mode == "RGBA":
+                        img = img.convert("RGB")
+                    img.save(newPath, format="JPEG", quality=quality.get(), subsampling=0)
+                except UnidentifiedImageError as e:
+                    shutil.copy(file, newPath)
         # If renaming
         else:
             if prefixVar.get() == "":
@@ -183,20 +185,24 @@ def move(win):
             counter = 0
             # Check for illegal characters, then move
             for file in paths:
-                illegalCh = ["#", "%", "&", "{", "}", "/", "<", ">", ".", "\\", "[", "]", ":", ";", "|", ","]
-                for ch in illegalCh:
-                    if prefixVar.get().find(ch) != -1:
-                        Error("Illegal character " + ch + " in prefix", win)
-                        return
+                
                 newPath = dest_path.get() + "/" + prefixVar.get() + "_" + str(counter) + file[file.rfind("."):]
-                newPath = newPath[:newPath.rfind(".")] + ".jpg"
-                img = Image.open(file)
-                if img.mode == "RGBA":
-                    img = img.convert("RGB")
-                img.save(newPath, format="JPEG", quality=quality.get(), subsampling=0)
-                counter += 1
+                
+                try:
+                    img = Image.open(file)
+                    illegalCh = ["#", "%", "&", "{", "}", "/", "<", ">", ".", "\\", "[", "]", ":", ";", "|", ","]
+                    for ch in illegalCh:
+                        if prefixVar.get().find(ch) != -1:
+                            Error("Illegal character " + ch + " in prefix", win)
+                            return
+                    newPath = newPath[:newPath.rfind(".")] + ".jpg"
+                    if img.mode == "RGBA":
+                        img = img.convert("RGB")
+                    img.save(newPath, format="JPEG", quality=quality.get(), subsampling=0)
+                    counter += 1
+                except UnidentifiedImageError as e:
+                    shutil.copy(file, dest_path.get() + "/" + file[file.rfind("/"):])
         success()
-
 
 
 def go(win):
