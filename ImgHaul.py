@@ -1,9 +1,6 @@
-#TODO: optimize exif so it's not slow
-
-
 from tkinter import *
 from tkinter import filedialog
-from PIL import Image
+from PIL import Image, UnidentifiedImageError
 import shutil, os, exifread
 import numpy as np
 import matplotlib.pyplot as plt
@@ -91,30 +88,27 @@ def success():
 def genPyplot():
     fig = Figure(figsize = (6,4))
     fig.set_facecolor("gray")
-    mm = {} 
+    mm = {}
 
     for file in paths:
-        f = open(file, 'rb')
-        tags = exifread.process_file(f, stop_tag='EXIF FocalLength')
-        # if len(tags) == 0:
-        #     break
-        # elif int(str(tags["EXIF FocalLength"])) not in mm.keys():
-        #     mm[int(str(tags["EXIF FocalLength"]))] = 1
-        # else:
-        #     mm[int(str(tags["EXIF FocalLength"]))] += 1
-        focalLength = tags.get("EXIF FocalLength")
-        focalLength = str(focalLength)
-        if focalLength != None:
-            if "/" in focalLength:
-                num, denom = str(focalLength).split("/")
-                focalLength = float(num) / float(denom)
-            if focalLength not in mm.keys():
-                mm[focalLength] = 1
-            else:
-                mm[focalLength] += 1
+        with open(file, 'rb') as f:
+            tags = exifread.process_file(f, stop_tag='EXIF FocalLength', details=False)
+            focalLength = tags.get("EXIF FocalLength")
+            focalLength = str(focalLength)
+            if focalLength != None and focalLength != "None":
+                if "/" in focalLength:
+                    focalLength = int(focalLength[:focalLength.find("/")]) // 2
+                focalLength = int(focalLength)
+                if focalLength not in mm.keys():
+                    
+                    mm[focalLength] = 1
+                else:
+                    mm[focalLength] += 1
+        
+    # for key in mm.keys():
+    #     print("Key: ", key, " Type: ", type(key))   
 
     plot = fig.add_subplot(111)
-    print(type(list(mm.keys())[0]))
     
     xticks = list(sorted(mm.keys()))
     plot.bar(mm.keys(), mm.values(), color="white")
@@ -308,7 +302,7 @@ goButton = Button(mf, text="Go", highlightbackground="gray", highlightcolor="gra
 goButton.grid(row=0,column=3, padx=(80,0), sticky=N, pady=(30,0))
 
 ### Quit Button ###
-quitButton = Button(mf, text="Quit", highlightbackground="gray", highlightcolor="gray", command=win.quit)
+quitButton = Button(mf, text="Quit", bg="gray", highlightbackground="gray", highlightcolor="gray", command=win.quit)
 quitButton.grid(row=0, column=3, pady=(50,5), padx=(80,0))
 
 
