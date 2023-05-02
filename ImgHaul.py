@@ -1,5 +1,6 @@
 from tkinter import *
 from tkinter import filedialog
+import tkinter
 from PIL import Image, UnidentifiedImageError
 import shutil, os, exifread
 import numpy as np
@@ -147,7 +148,8 @@ def move(win):
         else:
             # Check for empty prefix
             if prefixVar.get() == "":
-                Error("No prefix provided", win)
+                tkinter.messagebox.showwarning("Warning", "No prefix provided")
+                # Error("No prefix provided", win)
                 win.destroy()
             counter = 0
             # Check for illegal characters, then move
@@ -155,7 +157,8 @@ def move(win):
                 illegalCh = ["#", "%", "&", "{", "}", "/", "<", ">", ".", "\\", "[", "]", ":", ";", "|", ","]
                 for ch in illegalCh:
                     if prefixVar.get().find(ch) != -1:
-                        Error("Illegal character " + ch + " in prefix", win)
+                        tkinter.messagebox.showwarning("Warning", "Illegal character '" + ch + "' in prefix")
+                        # Error("Illegal character " + ch + " in prefix", win)
                         return
                 name = prefixVar.get() + "_" + str(counter) + file[file.rfind("."):]
                 shutil.move(file, dest_path.get() + "/" + name)
@@ -175,12 +178,13 @@ def move(win):
                     if img.mode == "RGBA":
                         img = img.convert("RGB")
                     img.save(newPath, format="JPEG", quality=quality.get(), subsampling=0)
-                except UnidentifiedImageError as e:
-                    shutil.copy(file, newPath)
+                except UnidentifiedImageError as ignored:
+                    pass
         # If renaming
         else:
             if prefixVar.get() == "":
-                Error("No prefix provided", win)
+                tkinter.messagebox.showwarning("Warning", "No prefix provided")
+                # Error("No prefix provided", win)
                 win.destroy()
             counter = 0
             # Check for illegal characters, then move
@@ -193,7 +197,8 @@ def move(win):
                     illegalCh = ["#", "%", "&", "{", "}", "/", "<", ">", ".", "\\", "[", "]", ":", ";", "|", ","]
                     for ch in illegalCh:
                         if prefixVar.get().find(ch) != -1:
-                            Error("Illegal character " + ch + " in prefix", win)
+                            tkinter.messagebox.showwarning("Warning", "Illegal character '" + ch + "' in prefix")
+                            # Error("Illegal character " + ch + " in prefix", win)
                             return
                     newPath = newPath[:newPath.rfind(".")] + ".jpg"
                     if img.mode == "RGBA":
@@ -201,24 +206,22 @@ def move(win):
                     img.save(newPath, format="JPEG", quality=quality.get(), subsampling=0)
                     counter += 1
                 except UnidentifiedImageError as e:
-                    shutil.copy(file, dest_path.get() + "/" + file[file.rfind("/"):])
+                    print(e)
         success()
 
 
 def go(win):
     if filesLb.size() == 0:
-        Error("No files selected", win)
-        win.destroy()
+        tkinter.messagebox.showwarning('Warning', "No files selected")
     elif dest_path.get() == "":
-        Error("No destination set", win)
-        win.destroy()
+        tkinter.messagebox.showwarning('Warning', "Destination not set")
     else:
         if folderVal.get() == 1:
             illegalCh = ["#", "%", "&", "{", "}", "/", "<", ">", ".", "\\", "[", "]", ":", ";", "|", ","]
             dir = folderName.get()
             for ch in illegalCh:
                 if folderName.get().find(ch) != -1:
-                    Error("Illegal character " + ch + " in folder name", win)
+                    tkinter.messagebox.showwarning('Warning', "Illegal character '" + ch + "' in folder name")
                     return
             parentDir = dest_path.get()
             path = os.path.join(parentDir, dir)
