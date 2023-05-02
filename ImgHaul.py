@@ -238,7 +238,7 @@ def go(win):
             parentDir = dest_path.get()
             path = os.path.join(parentDir, dir)
             if (os.path.exists(path)):
-                Error("Path already exists", win)
+                tkinter.messagebox.showwarning("Warning", "Path already exists")
                 return
             os.mkdir(path)
             dest_path.set(path)
