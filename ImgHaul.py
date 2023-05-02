@@ -59,19 +59,19 @@ def renameLockToggle():
         prefixState.set("disabled")
 
 
-def Error(msg:str, win:Tk):
-    err = Toplevel()
-    def closeWin():
-        err.destroy()
-        win.quit()
-        return
-    err.grab_set()
-    err.title("Error")
-    label = Label(err, bg="gray", text=msg, padx=10, pady=10)
-    close = Button(err, bg="gray",  text="Ok", command=closeWin)
-    label.pack(side=LEFT)
-    close.pack(side=RIGHT)
-    err.wait_window()
+# def Error(msg:str, win:Tk):
+#     err = Toplevel()
+#     def closeWin():
+#         err.destroy()
+#         win.quit()
+#         return
+#     err.grab_set()
+#     err.title("Error")
+#     label = Label(err, bg="gray", text=msg, padx=10, pady=10)
+#     close = Button(err, bg="gray",  text="Ok", command=closeWin)
+#     label.pack(side=LEFT)
+#     close.pack(side=RIGHT)
+#     err.wait_window()
 
 
 def success():
@@ -106,15 +106,28 @@ def genPyplot():
                 else:
                     mm[focalLength] += 1
         
-    # for key in mm.keys():
-    #     print("Key: ", key, " Type: ", type(key))   
+  
 
     plot = fig.add_subplot(111)
-    
+
     xticks = list(sorted(mm.keys()))
-    plot.bar(mm.keys(), mm.values(), color="white")
-    plot.set_xticks(xticks)
-    plot.set_xticklabels(xticks)
+
+    if xticks:  
+        plot.bar(mm.keys(), mm.values(), color="white")
+
+        
+        num_xticks = 10
+
+        
+        new_xticks = np.linspace(min(xticks), max(xticks), num_xticks)
+        new_xticklabels = [f"{int(round(tick))}" for tick in new_xticks]
+
+        plot.set_xticks(new_xticks)
+        plot.set_xticklabels(new_xticklabels)
+    else:
+        plot.set_xticks([])
+        plot.set_yticks([])
+
     plot.tick_params(colors="white")
 
     plot.set_xlabel("Focal Length in mm", fontsize=12, color="white")
@@ -123,10 +136,10 @@ def genPyplot():
     plot.spines[:].set_color("white")
     plot.set_facecolor("gray")
 
-    if not mm:
-        plot.set_yticks([1])
-    else:
-        plot.yaxis.set_major_locator(MaxNLocator(integer=True))
+    # if not mm:
+    #     plot.set_yticks([1])
+    # else:
+    #     plot.yaxis.set_major_locator(MaxNLocator(integer=True))
 
     frame = Frame(win,border=3,relief=GROOVE)
     canvas = FigureCanvasTkAgg(fig,master=frame)
@@ -170,7 +183,6 @@ def move(win):
         if renameVal.get() == 0:
             for file in paths:
                 newPath = dest_path.get() + "/" + file[file.rfind("/"):]
-                print("New Path: ", newPath) 
                 # If file is supported
                 try:
                     img = Image.open(file)
@@ -205,8 +217,8 @@ def move(win):
                         img = img.convert("RGB")
                     img.save(newPath, format="JPEG", quality=quality.get(), subsampling=0)
                     counter += 1
-                except UnidentifiedImageError as e:
-                    print(e)
+                except UnidentifiedImageError as ignored:
+                    pass
         success()
 
 
